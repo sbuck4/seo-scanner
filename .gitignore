@@ -3,24 +3,89 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-
-# Reports - don't commit scan results
-reports/
-*.xlsx
-*.csv
-*.html
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
 # Virtual environments
 venv/
 env/
+ENV/
+env.bak/
+venv.bak/
 .venv/
+
+# Environment variables
 .env
+.env.local
+.env.development
+.env.test
+.env.production
 
 # IDE
 .vscode/
 .idea/
 *.swp
+*.swo
+*~
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Reports - keep structure, ignore generated content
+reports/*.xlsx
+reports/*.html
+reports/*.csv
+reports/*.json
+
+# Streamlit
+.streamlit/
+
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+.nox/
+htmlcov/
+.coverage.*
+
+# Temporary files
+tmp/
+temp/
+*.bak
+*.tmp
+
+# Docker
+.dockerignore
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
