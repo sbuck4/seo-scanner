@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import time
 import os
+import json
 from datetime import datetime
 from urllib.parse import urlparse
 import sys
@@ -302,6 +303,24 @@ def run_seo_scan(url, max_pages=10):
             'pages_found': len(pages_data)
         }
         
+        # Save to backend storage
+        try:
+            reporter = EnhancedPandasReporter(url)
+            scan_metadata = {
+                'scan_id': scan_id,
+                'url': url,
+                'scan_date': datetime.now().isoformat(),
+                'pages_found': len(pages_data),
+                'total_issues': len(all_issues),
+                'user_agent': 'SEO Scanner Pro',
+                'scan_type': 'full_site_analysis'
+            }
+            backend_files = reporter.generate_reports(pages_data, all_issues, scan_metadata)
+            app_logger.info(f"Backend storage completed: {backend_files['scan_folder']}")
+        except Exception as e:
+            app_logger.error(f"Backend storage failed: {e}")
+            # Continue even if backend storage fails
+        
         # Add to history and save full scan data
         domain = urlparse(url).netloc.replace('www.', '')
         st.session_state.scanned_websites.add(domain)
@@ -584,6 +603,48 @@ def main():
         total_scans = len(st.session_state.scan_history)
         st.markdown(f"**Websites Scanned:** {websites_scanned}")
         st.markdown(f"**Total Scans:** {total_scans}")
+        
+        # Admin section
+        st.markdown("---")
+        if st.checkbox("🔧 Admin Panel"):
+            st.markdown("### Backend Storage")
+            backend_path = os.path.join("reports", "backend_storage")
+            if os.path.exists(backend_path):
+                # List all scan folders
+                scan_folders = [f for f in os.listdir(backend_path) if os.path.isdir(os.path.join(backend_path, f))]
+                scan_folders.sort(reverse=True)  # Most recent first
+                
+                st.markdown(f"**Total Backend Scans:** {len(scan_folders)}")
+                st.markdown(f"**Storage Path:** `{os.path.abspath(backend_path)}`")
+                
+                if scan_folders:
+                    st.markdown("**Recent Scans:**")
+                    for folder in scan_folders[:10]:  # Show last 10
+                        folder_path = os.path.join(backend_path, folder)
+                        # Get folder info
+                        try:
+                            metadata_file = None
+                            for file in os.listdir(folder_path):
+                                if file.startswith("scan_metadata_"):
+                                    metadata_file = os.path.join(folder_path, file)
+                                    break
+                            
+                            if metadata_file and os.path.exists(metadata_file):
+                                with open(metadata_file, 'r', encoding='utf-8') as f:
+                                    metadata = json.load(f)
+                                domain = metadata.get('domain', folder.split('_')[0])
+                                scan_date = metadata.get('scan_date', 'Unknown')
+                                pages = metadata.get('total_pages', 0)
+                                issues = metadata.get('total_issues', 0)
+                                st.markdown(f"📁 **{domain}** - {scan_date[:10]} ({pages} pages, {issues} issues)")
+                            else:
+                                st.markdown(f"📁 {folder}")
+                        except Exception as e:
+                            st.markdown(f"📁 {folder} (metadata error)")
+                else:
+                    st.markdown("*No backend scans yet*")
+            else:
+                st.markdown("*Backend storage not initialized*")
         
         # Scan History
         st.markdown("## 📈 Recent Scans")

@@ -3,6 +3,7 @@ import numpy as np
 from datetime import datetime
 import os
 from io import BytesIO
+import json
 
 class EnhancedPandasReporter:
     def __init__(self, base_url):
@@ -10,9 +11,15 @@ class EnhancedPandasReporter:
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M')
         self.domain_name = base_url.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0]
         
-        # Create reports directory
+        # Create reports directory structure
         self.reports_dir = "reports"
+        self.backend_storage_dir = os.path.join(self.reports_dir, "backend_storage")
+        self.scan_folder = os.path.join(self.backend_storage_dir, f"{self.domain_name}_{self.timestamp}")
+        
+        # Ensure all directories exist
         os.makedirs(self.reports_dir, exist_ok=True)
+        os.makedirs(self.backend_storage_dir, exist_ok=True)
+        os.makedirs(self.scan_folder, exist_ok=True)
     
     def create_priority_matrix(self, issues_df):
         """Create priority scoring for issues"""
@@ -125,6 +132,67 @@ class EnhancedPandasReporter:
         
         return summary_pivot
     
+    def save_raw_data(self, pages_data, issues_data, scan_metadata=None):
+        """Save raw scan data as JSON files for backend storage"""
+        
+        # Save pages data
+        pages_file = os.path.join(self.scan_folder, f"pages_data_{self.domain_name}.json")
+        with open(pages_file, 'w', encoding='utf-8') as f:
+            json.dump(pages_data, f, indent=2, default=str, ensure_ascii=False)
+        
+        # Save issues data  
+        issues_file = os.path.join(self.scan_folder, f"issues_data_{self.domain_name}.json")
+        with open(issues_file, 'w', encoding='utf-8') as f:
+            json.dump(issues_data, f, indent=2, default=str, ensure_ascii=False)
+        
+        # Save scan metadata
+        if scan_metadata is None:
+            scan_metadata = {
+                'url': self.base_url,
+                'domain': self.domain_name,
+                'scan_timestamp': self.timestamp,
+                'scan_date': datetime.now().isoformat(),
+                'total_pages': len(pages_data),
+                'total_issues': len(issues_data),
+                'critical_issues': len([i for i in issues_data if i.get('type') == 'CRITICAL']),
+                'warning_issues': len([i for i in issues_data if i.get('type') == 'WARNING'])
+            }
+        
+        metadata_file = os.path.join(self.scan_folder, f"scan_metadata_{self.domain_name}.json")
+        with open(metadata_file, 'w', encoding='utf-8') as f:
+            json.dump(scan_metadata, f, indent=2, default=str, ensure_ascii=False)
+        
+        return {
+            'pages_file': pages_file,
+            'issues_file': issues_file,
+            'metadata_file': metadata_file,
+            'scan_folder': self.scan_folder
+        }
+    
+    def save_csv_reports(self, pages_df, issues_df):
+        """Save CSV versions of all data"""
+        
+        # Save issues CSV
+        issues_csv = os.path.join(self.scan_folder, f"issues_{self.domain_name}.csv")
+        issues_df.to_csv(issues_csv, index=False, encoding='utf-8')
+        
+        # Save pages CSV
+        pages_csv = os.path.join(self.scan_folder, f"pages_{self.domain_name}.csv")
+        pages_df.to_csv(pages_csv, index=False, encoding='utf-8')
+        
+        # Save summary CSV
+        if not issues_df.empty:
+            summary_df = self.create_issue_summary(issues_df)
+            if not summary_df.empty:
+                summary_csv = os.path.join(self.scan_folder, f"summary_{self.domain_name}.csv")
+                summary_df.to_csv(summary_csv, encoding='utf-8')
+        
+        return {
+            'issues_csv': issues_csv,
+            'pages_csv': pages_csv,
+            'scan_folder': self.scan_folder
+        }
+    
     def create_top_issues_list(self, issues_df, limit=20):
         """Create prioritized list of top issues to fix"""
         if issues_df.empty:
@@ -165,12 +233,7 @@ class EnhancedPandasReporter:
     
     def create_excel_report(self, pages_df, issues_df):
         """Create comprehensive Excel report with multiple sheets"""
-        
-        # Create scan folder
-        scan_folder = os.path.join(self.reports_dir, f"{self.domain_name}_{self.timestamp}")
-        os.makedirs(scan_folder, exist_ok=True)
-        
-        excel_file = os.path.join(scan_folder, f"SEO_Analysis_{self.domain_name}.xlsx")
+        excel_file = os.path.join(self.scan_folder, f"SEO_Analysis_{self.domain_name}.xlsx")
         
         with pd.ExcelWriter(excel_file, engine='openpyxl') as writer:
             
@@ -344,8 +407,8 @@ class EnhancedPandasReporter:
         
         print("="*80)
     
-    def generate_reports(self, pages_data, issues_data):
-        """Main function to generate all reports"""
+    def generate_reports(self, pages_data, issues_data, scan_metadata=None):
+        """Main function to generate all reports with backend storage"""
         
         # Convert to DataFrames
         pages_df = pd.DataFrame(pages_data)
@@ -354,13 +417,27 @@ class EnhancedPandasReporter:
         # Add SEO scores to pages
         pages_df = self.create_page_summary(pages_df)
         
+        # Save raw data to backend storage
+        raw_files = self.save_raw_data(pages_data, issues_data, scan_metadata)
+        
+        # Save CSV reports
+        csv_files = self.save_csv_reports(pages_df, issues_df)
+        
+        # Create Excel report (also saved to backend)
+        excel_file = self.create_excel_report(pages_df, issues_df)
+        
         # Print enhanced console report
         self.create_console_report(pages_df, issues_df)
         
-        # Create Excel report
-        excel_file = self.create_excel_report(pages_df, issues_df)
-        
         print(f"\n📊 Comprehensive Excel report saved to: {excel_file}")
+        print(f"💾 Backend storage folder: {self.scan_folder}")
         print("📈 Open the Excel file for detailed analysis and action items!")
         
-        return excel_file
+        # Return all file paths for reference
+        return {
+            'excel_file': excel_file,
+            'scan_folder': self.scan_folder,
+            'raw_files': raw_files,
+            'csv_files': csv_files,
+            'backend_storage_dir': self.backend_storage_dir
+        }
