@@ -455,14 +455,13 @@ def display_results(results):
             st.error(f"Error preparing Excel report: {e}")
     
     with col2:
-        if st.button("📋 Download CSV Data"):
-            csv_data = pd.DataFrame(issues).to_csv(index=False)
-            st.download_button(
-                label="Download Issues CSV",
-                data=csv_data,
-                file_name=f"seo_issues_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                mime="text/csv"
-            )
+        csv_data = pd.DataFrame(issues).to_csv(index=False)
+        st.download_button(
+            label="📋 Download CSV Report",
+            data=csv_data,
+            file_name=f"seo_issues_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            mime="text/csv"
+        )
 
 def calculate_seo_score(page):
     """Calculate SEO score for a page"""
