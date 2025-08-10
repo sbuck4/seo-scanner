@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import os
+from io import BytesIO
 
 class EnhancedPandasReporter:
     def __init__(self, base_url):
@@ -210,6 +211,51 @@ class EnhancedPandasReporter:
             pages_df.to_excel(writer, sheet_name='All Pages', index=False)
         
         return excel_file
+    
+    def create_excel_download_buffer(self, pages_df, issues_df):
+        """Create Excel report in memory buffer for download"""
+        buffer = BytesIO()
+        
+        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+            
+            # Sheet 1: Executive Summary
+            summary_data = self.create_executive_summary(pages_df, issues_df)
+            summary_df = pd.DataFrame(summary_data)
+            summary_df.to_excel(writer, sheet_name='Executive Summary', index=False)
+            
+            # Sheet 2: Top Issues (Action Items)
+            top_issues = self.create_top_issues_list(issues_df)
+            if not top_issues.empty:
+                top_issues.to_excel(writer, sheet_name='Top Issues', index=False)
+            
+            # Sheet 3: Quick Wins
+            quick_wins = self.create_quick_wins(issues_df)
+            if not quick_wins.empty:
+                quick_wins.to_excel(writer, sheet_name='Quick Wins', index=False)
+            
+            # Sheet 4: Page Analysis
+            page_summary = self.create_page_summary(pages_df.copy())
+            key_columns = ['url', 'seo_score', 'grade', 'title_length', 'has_meta_description', 
+                          'h1_count', 'total_images', 'images_without_alt', 'word_count']
+            if all(col in page_summary.columns for col in key_columns):
+                page_summary[key_columns].to_excel(writer, sheet_name='Page Analysis', index=False)
+            else:
+                page_summary.to_excel(writer, sheet_name='Page Analysis', index=False)
+            
+            # Sheet 5: Issues by Category
+            issue_summary = self.create_issue_summary(issues_df)
+            if not issue_summary.empty:
+                issue_summary.to_excel(writer, sheet_name='Issues by Category')
+            
+            # Sheet 6: All Issues (Raw Data)
+            if not issues_df.empty:
+                issues_df.to_excel(writer, sheet_name='All Issues', index=False)
+            
+            # Sheet 7: All Pages (Raw Data)
+            pages_df.to_excel(writer, sheet_name='All Pages', index=False)
+        
+        buffer.seek(0)
+        return buffer
     
     def create_executive_summary(self, pages_df, issues_df):
         """Create executive summary data"""

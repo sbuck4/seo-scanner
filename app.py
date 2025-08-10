@@ -441,14 +441,18 @@ def display_results(results):
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📊 Download Excel Report"):
-            try:
-                reporter = EnhancedPandasReporter(results['url'])
-                excel_file = reporter.generate_reports(pages_data, issues)
-                st.success(f"Excel report generated: {excel_file}")
-                st.info(f"📁 File saved to: {excel_file}")
-            except Exception as e:
-                st.error(f"Error generating report: {e}")
+        try:
+            reporter = EnhancedPandasReporter(results['url'])
+            excel_buffer = reporter.create_excel_download_buffer(pd.DataFrame(pages_data), pd.DataFrame(issues))
+            
+            st.download_button(
+                label="📊 Download Excel Report",
+                data=excel_buffer,
+                file_name=f"SEO_Analysis_{reporter.domain_name}_{reporter.timestamp}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        except Exception as e:
+            st.error(f"Error preparing Excel report: {e}")
     
     with col2:
         if st.button("📋 Download CSV Data"):
