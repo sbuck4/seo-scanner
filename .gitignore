@@ -59,11 +59,19 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Reports - keep structure, ignore generated content
+# Reports - ignore generated content but keep structure
 reports/*.xlsx
 reports/*.html
-reports/*.csv
+reports/*.csv  
 reports/*.json
+reports/*/*.xlsx
+reports/*/*.html
+reports/*/*.csv
+reports/*/*.json
+*.xlsx
+*.html
+*.csv
+*.json
 
 # Streamlit
 .streamlit/

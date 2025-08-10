@@ -1,7 +1,0 @@
-type,category,issue,url,recommendation
-WARNING,Title,Title too short (24 characters),https://sbuck4.github.io,Expand title to 30-60 characters for better SEO impact
-CRITICAL,Meta Description,Missing meta description,https://sbuck4.github.io,Add a compelling meta description (120-160 characters) that encourages clicks
-WARNING,Images,1 of 7 images missing alt text,https://sbuck4.github.io,Add descriptive alt text to all images for better accessibility and SEO
-INFO,Content,Moderate content volume (156 words),https://sbuck4.github.io,Consider expanding content to 300+ words for better SEO performance
-WARNING,Technical,Missing language attribute,https://sbuck4.github.io,"Add lang attribute to <html> tag (e.g., <html lang=""en"">)"
-INFO,Technical,Missing canonical URL,https://sbuck4.github.io,Consider adding canonical URL to prevent duplicate content issues

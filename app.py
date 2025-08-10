@@ -554,7 +554,7 @@ def health_check():
 def main():
     # Check for health endpoint query parameter
     try:
-        query_params = st.experimental_get_query_params()
+        query_params = st.query_params
         if "health" in query_params:
             health_status = health_check()
             st.json(health_status)
